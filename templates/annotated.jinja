@@ -1,0 +1,89 @@
+\documentclass[{{ body_font_size }}pt,a4paper]{article}
+
+\usepackage[UTF8]{ctex}
+\usepackage{microtype}
+\usepackage{etoolbox}
+\AtEndPreamble{\AtBeginDocument{\microtypesetup{disable}{\em}\microtypesetup{enable}}}
+
+\usepackage{hyphenat}
+\usepackage{fontspec}
+
+\newfontfamily\promptfont{ {{ prompt_font_family }} }[%
+    SizeFeatures={Size={{ prompt_font_size }}},
+    Numbers={Proportional, OldStyle}
+]
+
+\newfontfamily\titlefont{ {{ title_font_family }} }[%
+    SizeFeatures={Size={{ title_font_size }}},
+    Numbers={Proportional, OldStyle}
+]
+
+\newfontfamily\bodyfont{ {{ body_font_family }} }[%
+    SizeFeatures={Size={{ body_font_size }}},
+    Numbers={Proportional, OldStyle}
+]
+
+\setCJKmainfont{ {{ cjk_font_family }} }[SizeFeatures={Size={{ cjk_font_size }}}]
+
+\renewcommand{\baselinestretch}{1.3}
+\raggedbottom
+
+\newcommand{\dashpad}{\hspace{0em plus 0pt}}
+\newcommand{\mdash}{\dashpad\textemdash\dashpad}
+\newcommand{\ndash}{\dashpad\textendash\dashpad}
+\newcommand{\ellipsis}{\kern.12em\textellipsis\hspace{.12em plus 1pt}}
+
+\newcommand{\separator}{
+    \begin{center}
+        *\quad * \quad *
+    \end{center}
+}
+
+\usepackage[colorlinks=true]{hyperref}
+\usepackage[framemethod=TikZ]{mdframed}
+\usepackage{todonotes}
+\usepackage{xcolor}
+\definecolor{notecolor}{RGB}{193, 212, 245}
+\definecolor{ntextcolor}{RGB}{235, 30, 75}
+
+\newcommand{\note}[1]{\renewcommand{\baselinestretch}{1}%
+    \todo[backgroundcolor=notecolor,linecolor=notecolor,bordercolor=notecolor]{\bodyfont #1}}
+
+\newcommand{\ntext}[1]{\textcolor{ntextcolor}{ #1}}
+
+\usepackage[%
+    left=2.2cm,
+    right=9.1cm,
+    top=1.8cm,
+    bottom=2.8cm,
+    marginparwidth=7.2cm,
+    marginparsep=.5cm
+]{geometry}
+
+\usepackage{parskip}
+
+{% if watermark %}
+\usepackage{graphicx}
+\usepackage[%
+    contents={ \includegraphics[scale=.02]{ {{ watermark }} } },
+    opacity=1,
+    angle=0,
+]{background}
+{% endif %}
+
+\begin{document}
+
+{% for block in blocks %}
+{
+    {% if block[0] == "body" %}
+    \bodyfont
+    {% elif block[0] == "prompt" %}
+    \promptfont\bfseries
+    {% elif block[0] == "title" %}
+    \titlefont\bfseries
+    {% endif %}
+    {{ block[1] }}
+}
+{% endfor %}
+
+\end{document}
