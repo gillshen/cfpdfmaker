@@ -190,10 +190,9 @@ class ControlPanel(QFrame):
         # font selection
         self._fonts = QFontDatabase.families()
         self._font_sizes = [str(i) for i in range(8, 25)]
-        self._make_font_select('Prompt font', 'Open Sans', '9')
-        self._make_font_select('Title font', 'Open Sans', '12')
+        self._make_font_select('Heading font', 'Frutiger Linotype')
         self._make_font_select('Body font', 'EB Garamond', '12')
-        self._make_font_select('CJK font', 'Noto Serif SC', '10')
+        self._make_font_select('CJK font', 'Noto Serif SC')
 
         # watermark selection
         watermarks = [''] + os.listdir(WATERMARK_DIR)
@@ -218,10 +217,11 @@ class ControlPanel(QFrame):
     def on_execute(self, callback: callable):
         self._execute.clicked.connect(callback)
 
-    def _make_font_select(self, field, default_font="", default_size=""):
+    def _make_font_select(self, field, default_font="", size=""):
         self._make_heading(field)
         self._make_combobox(f'{field}_family', self._fonts, default_font)
-        self._make_combobox(f'{field}_size', self._font_sizes, default_size)
+        if size:
+            self._make_combobox(f'{field}_size', self._font_sizes, size)
 
     def _make_heading(self, heading, *, space_before=10, space_after=0):
         self.layout().addSpacing(space_before)
