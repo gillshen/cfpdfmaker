@@ -3,6 +3,16 @@ import re
 import jinja2
 
 
+def make_template(source_path):
+    env = jinja2.Environment(
+        trim_blocks=True,
+        lstrip_blocks=True,
+        keep_trailing_newline=True
+    )
+    with open(source_path, encoding='utf-8') as template_file:
+        return env.from_string(template_file.read())
+
+
 def txt2tex(template: jinja2.Template,
             source_path: str,
             params: dict,

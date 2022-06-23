@@ -20,7 +20,7 @@ import pprint
 
 import jinja2
 
-from texutils import txt2tex, tex2pdf, swap_ext
+from texutils import make_template, txt2tex, tex2pdf, swap_ext
 
 ROOT = Path(__file__).resolve().parent.parent
 TEMPLATE_DIR = os.path.join(ROOT, 'templates')
@@ -81,8 +81,7 @@ class MainWindow(QMainWindow):
             self._test_convert(template_name, output_dir, params, filenames)
             return
 
-        with open(template_name, encoding='utf-8') as template_file:
-            template = jinja2.Template(template_file.read())
+        template = make_template(template_name)
 
         # hold errors while letting other files be processedr
         errors = []
