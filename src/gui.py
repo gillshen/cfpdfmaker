@@ -1,5 +1,4 @@
-from fileinput import filename
-import os
+import os.path
 
 from PyQt6.QtWidgets import (
     QMainWindow,
@@ -19,12 +18,16 @@ from itertools import filterfalse
 from pathlib import Path
 import pprint
 
+import jinja2
+
+from texutils import txt2tex, tex2pdf, swap_ext
+
 ROOT = Path(__file__).resolve().parent.parent
 TEMPLATE_DIR = os.path.join(ROOT, 'templates')
 ICON_DIR = os.path.join(ROOT, 'assets', 'icons')
 WATERMARK_DIR = os.path.join(ROOT, 'assets', 'watermarks')
 
-TEST_MODE = True
+TEST_MODE = False
 
 
 class TemplateError(RuntimeError):
@@ -78,14 +81,19 @@ class MainWindow(QMainWindow):
             self._test_convert(template_name, output_dir, params, filenames)
             return
 
+        with open(template_name, encoding='utf-8') as template_file:
+            template = jinja2.Template(template_file.read())
+
         # hold errors while letting other files be processedr
         errors = []
 
         # TODO use threading?
         for filename in filenames:
+            tex_basename = swap_ext(filename, 'tex', base_only=True)
+            tex_path = os.path.join(output_dir, tex_basename)
             try:
-                tex_path = self.to_tex(filename, template_name, params)
-                self.lua(tex_path, output_dir)
+                txt2tex(template, filename, params, tex_path)
+                tex2pdf(tex_path)
             except (TemplateError, TexError) as e:
                 errors.append((filename, e))
 
@@ -98,16 +106,6 @@ class MainWindow(QMainWindow):
         print(f'{output_dir = }')
         pprint.pprint(params)
         pprint.pprint(filenames)
-
-    def to_tex(self, filename: str, template_name: str, params: dict) -> str:
-        # return the path to the generated tex file
-        pass
-
-    def lua(self, source_path: str, output_dir: str = None) -> None:
-        # run lualatex
-        # if successful, delete intermediate files
-        # else raise TexError('lualatex')
-        pass
 
 
 class FileList(QFrame):
@@ -195,7 +193,7 @@ class ControlPanel(QFrame):
         self._make_font_select('Prompt font', 'Open Sans', '9')
         self._make_font_select('Title font', 'Open Sans', '12')
         self._make_font_select('Body font', 'EB Garamond', '12')
-        self._make_font_select('CJK font', 'Noto Serif SC', '11')
+        self._make_font_select('CJK font', 'Noto Serif SC', '10')
 
         # watermark selection
         watermarks = [''] + os.listdir(WATERMARK_DIR)
@@ -254,9 +252,8 @@ def _get_watermark_path(path):
     # else raise WatermarkNotFoundError
     if not path:
         return None
-    if os.path.isfile(path):
-        return path
-    full_path = os.path.join(WATERMARK_DIR, path)
-    if os.path.isfile(full_path):
-        return full_path
-    raise WatermarkNotFoundError(path)
+    if not os.path.isfile(path):
+        path = os.path.join(WATERMARK_DIR, path)
+        if not os.path.isfile(path):
+            raise WatermarkNotFoundError(path)
+    return path.replace('\\', '/')

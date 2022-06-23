@@ -88,7 +88,9 @@ def parse_txt(s: str):
         yield style, p
 
 
-def swap_ext(source_name: str, ext: str) -> str:
+def swap_ext(source_name: str, ext: str, base_only=False) -> str:
+    if base_only:
+        source_name = os.path.basename(source_name)
     root, _ = os.path.splitext(source_name)
     return f'{root}.{ext}'
 
