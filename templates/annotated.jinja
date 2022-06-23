@@ -73,10 +73,13 @@
     {% if block[0] == "body" %}
     {{ block[1] }}
     {% elif block[0] == "prompt" %}
+    \vspace{1em}
     {\promptfont\bfseries {{ block[1] }}}
     {% elif block[0] == "title" %}
+    \vspace{1em}
     {\titlefont\bfseries {{ block[1] }}}
     {% elif block[0] == "addendum" %}
+    \vspace{1em}
     \begin{mdframed}[backgroundcolor=notecolor, roundcorner=4pt]
     {{ block[1] }}
     \end{mdframed}

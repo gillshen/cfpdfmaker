@@ -1,0 +1,80 @@
+\documentclass[{{ body_font_size }}pt,a4paper]{article}
+
+\usepackage{microtype}
+\usepackage{hyphenat}
+\usepackage{fontspec}
+
+\setmainfont{ {{ body_font_family }} }[Numbers={Proportional, OldStyle}]
+
+\newfontfamily\promptfont{ {{ heading_font_family }} }[%
+    Scale=0.85,
+    Numbers={Proportional, OldStyle}
+]
+
+\newfontfamily\titlefont{ {{ heading_font_family }} }[%
+    Scale=1.2,
+    Numbers={Proportional, OldStyle}
+]
+
+\renewcommand{\baselinestretch}{1.3}
+\raggedbottom
+
+\newcommand{\dashpad}{\hspace{0em plus 0pt}}
+\newcommand{\mdash}{\dashpad\textemdash\dashpad}
+\newcommand{\ndash}{\dashpad\textendash\dashpad}
+\newcommand{\ellipsis}{\kern.12em\textellipsis\hspace{.12em plus 1pt}}
+
+\newcommand{\separator}{
+    \begin{center}
+        *\quad * \quad *
+    \end{center}
+}
+
+\usepackage[colorlinks=true]{hyperref}
+\usepackage[framemethod=TikZ]{mdframed}
+\usepackage{xcolor}
+\definecolor{notecolor}{RGB}{193, 212, 245}
+
+\newcommand{\note}[1]{}
+\newcommand{\ntext}[1]{ #1}
+
+\usepackage[%
+    left=4.5cm,
+    right=4.5cm,
+    top=3.0cm,
+    bottom=4.0cm
+]{geometry}
+
+\usepackage{parskip}
+
+{% if watermark %}
+\usepackage{graphicx}
+\usepackage[%
+    contents={ \includegraphics[scale=.02]{ {{ watermark }} } },
+    opacity=1,
+    angle=0,
+]{background}
+{% endif %}
+
+\begin{document}
+
+{% for block in blocks %}
+    {% if block[0] == "body" %}
+    {{ block[1] }}
+    {% elif block[0] == "prompt" %}
+    \vspace{1em}
+    {\promptfont\bfseries {{ block[1] }}}
+    {% elif block[0] == "title" %}
+    \vspace{1em}
+    {\titlefont\bfseries {{ block[1] }}}
+    {% elif block[0] == "addendum" %}
+    \vspace{1em}
+    \begin{mdframed}[backgroundcolor=notecolor, roundcorner=4pt]
+    {{ block[1] }}
+    \end{mdframed}
+    {% elif block[0] == "separator" %}
+    \separator
+    {% endif %}
+{% endfor %}
+
+\end{document}
