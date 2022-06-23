@@ -1,3 +1,4 @@
+from fileinput import filename
 import os
 
 from PyQt6.QtWidgets import (
@@ -19,6 +20,10 @@ from pathlib import Path
 import pprint
 
 ROOT = Path(__file__).resolve().parent.parent
+TEMPLATE_DIR = os.path.join(ROOT, 'templates')
+ICON_DIR = os.path.join(ROOT, 'assets', 'icons')
+WATERMARK_DIR = os.path.join(ROOT, 'assets', 'watermarks')
+
 TEST_MODE = True
 
 
@@ -27,6 +32,10 @@ class TemplateError(RuntimeError):
 
 
 class TexError(RuntimeError):
+    pass
+
+
+class WatermarkNotFoundError(FileNotFoundError):
     pass
 
 
@@ -42,9 +51,9 @@ class MainWindow(QMainWindow):
         self._central.setLayout(layout)
 
         self.filelist = FileList(self._central)
-        layout.addWidget(self.filelist)
+        layout.addWidget(self.filelist, 1)
         self.control = ControlPanel(self._central)
-        layout.addWidget(self.control)
+        layout.addWidget(self.control, 0)
 
         self.control.on_execute(self.convert)
 
@@ -59,8 +68,9 @@ class MainWindow(QMainWindow):
         and finally delete intermediate files
         """
         params = self.control.get_parameters()
-        template_name = _get_template_path(params.pop('template_name'))
+        template_name = os.path.join(TEMPLATE_DIR, params.pop('template_name'))
         output_dir = params.pop('output_dir', None)
+        params['watermark'] = _get_watermark_path(params.pop('watermark'))
         filenames = self.filelist.get_filenames()
 
         if TEST_MODE:
@@ -121,6 +131,7 @@ class FileList(QFrame):
 
         # the list proper
         self.list = QListWidget(self)
+        self.list.setMinimumWidth(400)
         layout.addWidget(self.list)
 
     def add(self):
@@ -152,7 +163,7 @@ class FileList(QFrame):
         self._actions[text] = action = QAction()
         self.toolbar.addAction(action)
         if icon:
-            action.setIcon(QIcon(_get_asset(f'{icon}.png')))
+            action.setIcon(QIcon(os.path.join(ICON_DIR, f'{icon}.png')))
             action.setToolTip(text)
         else:
             action.setText(text)
@@ -171,9 +182,8 @@ class ControlPanel(QFrame):
         self._fields = {}  # field_name -> callable
 
         # template selection
-        template_names = _get_template_names()
         self._make_heading('Template', space_before=5)
-        self._make_combobox('template_name', template_names)
+        self._make_combobox('template_name', os.listdir(TEMPLATE_DIR))
 
         # output dir selection
         self._make_heading('Output directory')
@@ -186,6 +196,11 @@ class ControlPanel(QFrame):
         self._make_font_select('Title font', 'Open Sans', '12')
         self._make_font_select('Body font', 'EB Garamond', '12')
         self._make_font_select('CJK font', 'Noto Serif SC', '11')
+
+        # watermark selection
+        watermarks = [''] + os.listdir(WATERMARK_DIR)
+        self._make_heading('Watermark')
+        self._make_combobox('watermark', watermarks, watermarks[-1])
 
         layout.addStretch()
         layout.addSpacing(40)
@@ -231,14 +246,17 @@ class ControlPanel(QFrame):
         self._fields[field_name] = getter
 
 
-def _get_template_names() -> list[str]:
-    # return file names in ../templates/
-    return os.listdir(os.path.join(ROOT, 'templates'))
-
-
-def _get_asset(filename) -> str:
-    return os.path.join(ROOT, 'assets', f'{filename}')
-
-
-def _get_template_path(template_name) -> str:
-    return os.path.join(ROOT, 'templates', template_name)
+def _get_watermark_path(path):
+    # if path is an empty string, return None
+    # if path is already a full path pointing to a file, return it as is
+    # else check if it's the name of a file under ../assets/watermarks
+    # if yes, construct the full path and return it
+    # else raise WatermarkNotFoundError
+    if not path:
+        return None
+    if os.path.isfile(path):
+        return path
+    full_path = os.path.join(WATERMARK_DIR, path)
+    if os.path.isfile(full_path):
+        return full_path
+    raise WatermarkNotFoundError(path)
