@@ -60,6 +60,12 @@ def parse_txt(s: str):
         # process hyperlinks
         p = re.sub(r'\[([^]]+)\]\(([^)]+)\)', r'\\href{\2}{\1}', p)
 
+        # process bold and italic text
+        p = re.sub(r'\*\*((?:[^*]|\*[^*])+)\*\*', r'\\textbf{\1}', p)
+        p = re.sub(r'\*([^*]+)\*', r'\\emph{\1}', p)
+        # another pass to deal with nested cases
+        p = re.sub(r'\*\*((?:[^*]|\*[^*])+)\*\*', r'\\textbf{\1}', p)
+
         # convert straight quotes to tex-style quotation marks
         p = re.sub(r'(\s|\(|\{|^)"', r'\1``', p)
         p = re.sub(r"(\s|\(|\{|^)'", r'\1`', p)
