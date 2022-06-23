@@ -41,7 +41,7 @@ def tex2pdf(source_path: str, target_path=None) -> None:
 def parse_txt(s: str):
     """return a list of tuples (block_style, block_text)"""
     # replace soft linebreaks
-    s = re.sub(r'(\\{2}|\\par )[ ]*\r?\n', r' \1', s)
+    s = re.sub(r'(\\{2}|\\par )[ ]*\r?\n', r' \1 ', s)
 
     # split into blocks that do not contain newlines
     stripped_lines = (line.strip() for line in s.splitlines())
@@ -58,7 +58,7 @@ def parse_txt(s: str):
 
         # TODO more processing
         # convert \par to a proper line break
-        p = re.sub(r'\s*\\par\s+', '\n\n', p)
+        # p = re.sub(r'\s*\\par\s+', '\n\n', p)
 
         # escape spcial characters
         p = re.sub(r'([&#%$])', r'\\\1', p)
