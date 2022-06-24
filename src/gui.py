@@ -6,6 +6,7 @@ import traceback
 import json
 
 from PyQt6.QtWidgets import (
+    QApplication,
     QMainWindow,
     QFrame,
     QToolBar,
@@ -13,6 +14,7 @@ from PyQt6.QtWidgets import (
     QFileDialog,
     QLabel,
     QComboBox,
+    QCheckBox,
     QPushButton,
     QMessageBox,
     QHBoxLayout,
@@ -36,6 +38,20 @@ if not os.path.exists(LOG_DIR):
 
 class WatermarkNotFoundError(FileNotFoundError):
     pass
+
+
+def main():
+    app = QApplication([])
+    style = """
+    QWidget {
+      font-family: "Lucida Grande", "Segoe UI", sans-serif;
+      font-size: 11pt;
+    }
+    """
+    app.setStyleSheet(style)
+    window = MainWindow()
+    window.show()
+    app.exec()
 
 
 class MainWindow(QMainWindow):
@@ -71,8 +87,10 @@ class MainWindow(QMainWindow):
         params = self.control.get_parameters()
         template_name = os.path.join(TEMPLATE_DIR, params.pop('template_name'))
         output_dir = params.pop('output_dir', None)
+        keep_tex = params.pop('keep_tex', True)
         params['watermark'] = _get_watermark_path(params.pop('watermark'))
         filenames = self.filelist.get_filenames()
+
         self._log_params(
             template_name=template_name,
             output_dir=output_dir,
@@ -98,11 +116,17 @@ class MainWindow(QMainWindow):
                 # second pass is necessary to generate watermarks
                 texutils.tex2pdf(tex_path)
                 # move the pdf to the output dir
-                # and remove the tex file
+                # and move or remove the tex file as the user dictates
                 pdf_path = texutils.swap_ext(tex_path, 'pdf')
                 pdf_basename = os.path.basename(pdf_path)
                 shutil.move(pdf_path, os.path.join(output_dir, pdf_basename))
-                os.remove(tex_path)
+                if keep_tex:
+                    shutil.move(
+                        tex_path,
+                        os.path.join(output_dir, tex_basename)
+                    )
+                else:
+                    os.remove(tex_path)
             finally:
                 texutils.delete_helper_files(tex_path)
 
@@ -227,8 +251,12 @@ class ControlPanel(QFrame):
         button_frame = QFrame()
         layout.addWidget(button_frame)
         button_frame.setLayout(QHBoxLayout())
+        keep_tex_check = QCheckBox('Keep tex files')
+        keep_tex_check.setChecked(False)
+        self._fields['keep_tex'] = keep_tex_check.isChecked
         self._execute = QPushButton('Convert', button_frame)
-        # right-align the exec button
+        # left-align the checkbox; right-align the exec button
+        button_frame.layout().addWidget(keep_tex_check)
         button_frame.layout().addStretch()
         button_frame.layout().addWidget(self._execute)
         button_frame.layout().setContentsMargins(0, 0, 0, 0)
