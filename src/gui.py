@@ -233,7 +233,26 @@ class ControlPanel(QFrame):
 
         # template selection
         self._make_heading('Template', space_before=5)
-        self._make_combobox('template_name', os.listdir(TEMPLATE_DIR))
+        self._make_combobox('template_name', values=os.listdir(TEMPLATE_DIR))
+
+        layout.addSpacing(20)
+
+        # font selection
+        self._fonts = QFontDatabase.families()
+        self._font_sizes = [str(i) for i in range(8, 25)]
+        self._make_font_select('Body font', 'EB Garamond', '12')
+        self._make_font_select('Heading font', 'Frutiger Linotype')
+        self._make_font_select('CJK font', 'Noto Serif SC')
+
+        layout.addSpacing(20)
+
+        # watermark selection
+        watermarks = [''] + os.listdir(WATERMARK_DIR)
+        self._make_heading('Watermark')
+        self._make_combobox(
+            'watermark', values=watermarks, default=watermarks[-1])
+
+        layout.addSpacing(20)
 
         # output dir selection
         self._make_heading('Output directory')
@@ -253,18 +272,6 @@ class ControlPanel(QFrame):
         self._getdir.triggered.connect(self.open_dir_dialog)
         output_frame.addAction(self._getdir)
 
-        # font selection
-        self._fonts = QFontDatabase.families()
-        self._font_sizes = [str(i) for i in range(8, 25)]
-        self._make_font_select('Body font', 'EB Garamond', '12')
-        self._make_font_select('Heading font', 'Frutiger Linotype')
-        self._make_font_select('CJK font', 'Noto Serif SC')
-
-        # watermark selection
-        watermarks = [''] + os.listdir(WATERMARK_DIR)
-        self._make_heading('Watermark')
-        self._make_combobox('watermark', watermarks, watermarks[-1])
-
         layout.addStretch()
         layout.addSpacing(40)
 
@@ -275,7 +282,8 @@ class ControlPanel(QFrame):
         keep_tex_check = QCheckBox('Keep tex files')
         keep_tex_check.setChecked(False)
         self._fields['keep_tex'] = keep_tex_check.isChecked
-        self._execute = QPushButton('Convert', button_frame)
+        self._execute = QPushButton('Make PDF', button_frame)
+        self._execute.setStyleSheet('padding: 5 10')
         # left-align the checkbox; right-align the exec button
         button_frame.layout().addWidget(keep_tex_check)
         button_frame.layout().addStretch()
@@ -295,23 +303,30 @@ class ControlPanel(QFrame):
 
     def _make_font_select(self, field, default_font="", size=""):
         self._make_heading(field)
-        self._make_combobox(f'{field}_family', self._fonts, default_font)
+        self._make_combobox(
+            f'{field}_family', values=self._fonts, default=default_font)
         if size:
-            self._make_combobox(f'{field}_size', self._font_sizes, size)
+            self._make_combobox(
+                f'{field}_size', values=self._font_sizes, default=size)
 
     def _make_heading(self, heading, *, space_before=10, space_after=0):
         self.layout().addSpacing(space_before)
         self.layout().addWidget(QLabel(heading))
         self.layout().addSpacing(space_after)
 
-    def _make_combobox(self, field_name, values=(), default=None) -> QComboBox:
-        combobox = QComboBox(self)
+    def _make_combobox(self,
+                       field_name, *,
+                       values=(),
+                       default=None,
+                       parent=None) -> QComboBox:
+        parent = parent or self
+        combobox = QComboBox(parent)
         combobox.addItems(values)
         try:
             combobox.setCurrentIndex(values.index(default))
         except ValueError:
             pass
-        self.layout().addWidget(combobox)
+        parent.layout().addWidget(combobox)
         self._register_getter(field_name, combobox.currentText)
         return combobox
 
