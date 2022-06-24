@@ -1,4 +1,8 @@
 import os.path
+from itertools import filterfalse
+from pathlib import Path
+import shutil
+import pprint
 
 from PyQt6.QtWidgets import (
     QMainWindow,
@@ -14,9 +18,6 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtGui import QAction, QIcon, QFontDatabase
 from PyQt6.QtCore import Qt
-from itertools import filterfalse
-from pathlib import Path
-import pprint
 
 import texutils
 
@@ -24,16 +25,6 @@ ROOT = Path(__file__).resolve().parent.parent
 TEMPLATE_DIR = os.path.join(ROOT, 'templates')
 ICON_DIR = os.path.join(ROOT, 'assets', 'icons')
 WATERMARK_DIR = os.path.join(ROOT, 'assets', 'watermarks')
-
-TEST_MODE = False
-
-
-class TemplateError(RuntimeError):
-    pass
-
-
-class TexError(RuntimeError):
-    pass
 
 
 class WatermarkNotFoundError(FileNotFoundError):
@@ -73,11 +64,7 @@ class MainWindow(QMainWindow):
         output_dir = params.pop('output_dir', None)
         params['watermark'] = _get_watermark_path(params.pop('watermark'))
         filenames = self.filelist.get_filenames()
-
-        if TEST_MODE:
-            print('*** TEST MODE ***')
-            self._test_convert(template_name, output_dir, params, filenames)
-            return
+        self._log(template_name, output_dir, params, filenames)
 
         template = texutils.make_template(template_name)
 
@@ -87,20 +74,26 @@ class MainWindow(QMainWindow):
         # TODO use threading?
         for filename in filenames:
             tex_basename = texutils.swap_ext(filename, 'tex', base_only=True)
-            tex_path = os.path.join(output_dir, tex_basename)
+            tex_path = os.path.join(ROOT, tex_basename)
             try:
                 texutils.txt2tex(template, filename, params, tex_path)
                 texutils.tex2pdf(tex_path)
                 texutils.tex2pdf(tex_path)
                 texutils.delete_helper_files(tex_path)
-            except (TemplateError, TexError) as e:
+                # move the pdf to the output dir
+                pdf_path = texutils.swap_ext(tex_path, 'pdf')
+                pdf_basename = os.path.basename(pdf_path)
+                shutil.move(pdf_path, os.path.join(output_dir, pdf_basename))
+            except Exception as e:
                 errors.append((filename, e))
 
         # TODO user feedback
         for (filename, e) in errors:
             print('ERROR', filename, e)
+        print('*** finished ***')
 
-    def _test_convert(self, template_name, output_dir, params, filenames):
+    def _log(self, template_name, output_dir, params, filenames):
+        print('*** test mode ***')
         print(f'{template_name = }')
         print(f'{output_dir = }')
         pprint.pprint(params)
@@ -184,7 +177,7 @@ class ControlPanel(QFrame):
 
         # output dir selection
         self._make_heading('Output directory')
-        self._make_combobox('output_dir', [str(ROOT)])
+        self._make_combobox('output_dir', [str(ROOT), os.path.expanduser('~')])
 
         # font selection
         self._fonts = QFontDatabase.families()

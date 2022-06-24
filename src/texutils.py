@@ -2,6 +2,17 @@ import os
 import re
 import jinja2
 import subprocess
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+
+
+class TemplateRenderingError(RuntimeError):
+    pass
+
+
+class LuaLaTeXRuntimeError(RuntimeError):
+    pass
 
 
 def make_template(source_path):
@@ -24,20 +35,32 @@ def txt2tex(template: jinja2.Template,
     render a latex-ready str using the blocks and additional params
     and then write the str into the target file
     """
-    # TODO handle errors
     with open(source_path, encoding='utf-8') as source:
         blocks = list(parse_txt(source.read()))
-        tex_string = template.render(blocks=blocks, **params)
 
-    target_path = target_path or swap_ext(source_path, 'tex')
+    try:
+        tex_string = template.render(blocks=blocks, **params)
+    except Exception as e:
+        raise TemplateRenderingError(source_path) from e
+
+    if not target_path:
+        target_name = swap_ext(source_path, 'tex')
+        target_path = os.path.join(ROOT, target_name)
     with open(target_path, 'w', encoding='utf-8') as target:
         target.write(tex_string)
 
 
-def tex2pdf(source_path: str, output_dir=None) -> None:
-    # TODO handle errors
-    output_dir = output_dir or os.path.split(source_path)[0]
-    subprocess.run(['lualatex', source_path], shell=False, check=True)
+def tex2pdf(source_path: str) -> None:
+    print(source_path)
+    args = [
+        'lualatex',
+        '--interaction=nonstopmode',
+        source_path,
+    ]
+    try:
+        subprocess.run(args, shell=False, check=True)
+    except Exception as e:
+        raise LuaLaTeXRuntimeError(source_path) from e
 
 
 def parse_txt(s: str):
