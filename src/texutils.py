@@ -1,6 +1,7 @@
-import os.path
+import os
 import re
 import jinja2
+import subprocess
 
 
 def make_template(source_path):
@@ -23,6 +24,7 @@ def txt2tex(template: jinja2.Template,
     render a latex-ready str using the blocks and additional params
     and then write the str into the target file
     """
+    # TODO handle errors
     with open(source_path, encoding='utf-8') as source:
         blocks = list(parse_txt(source.read()))
         tex_string = template.render(blocks=blocks, **params)
@@ -32,10 +34,10 @@ def txt2tex(template: jinja2.Template,
         target.write(tex_string)
 
 
-def tex2pdf(source_path: str, target_path=None) -> None:
-    target_path = target_path or swap_ext(source_path, 'pdf')
-    # TODO
-    print(target_path)
+def tex2pdf(source_path: str, output_dir=None) -> None:
+    # TODO handle errors
+    output_dir = output_dir or os.path.split(source_path)[0]
+    subprocess.run(['lualatex', source_path], shell=False, check=True)
 
 
 def parse_txt(s: str):
@@ -109,6 +111,14 @@ def swap_ext(source_name: str, ext: str, base_only=False) -> str:
         source_name = os.path.basename(source_name)
     root, _ = os.path.splitext(source_name)
     return f'{root}.{ext}'
+
+
+def delete_helper_files(tex_path):
+    for ext in ['aux', 'log', 'out', 'synctex.gz']:
+        try:
+            os.remove(swap_ext(tex_path, ext))
+        except FileNotFoundError:
+            pass
 
 
 if __name__ == '__main__':

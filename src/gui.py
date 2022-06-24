@@ -18,9 +18,7 @@ from itertools import filterfalse
 from pathlib import Path
 import pprint
 
-import jinja2
-
-from texutils import make_template, txt2tex, tex2pdf, swap_ext
+import texutils
 
 ROOT = Path(__file__).resolve().parent.parent
 TEMPLATE_DIR = os.path.join(ROOT, 'templates')
@@ -81,18 +79,20 @@ class MainWindow(QMainWindow):
             self._test_convert(template_name, output_dir, params, filenames)
             return
 
-        template = make_template(template_name)
+        template = texutils.make_template(template_name)
 
         # hold errors while letting other files be processedr
         errors = []
 
         # TODO use threading?
         for filename in filenames:
-            tex_basename = swap_ext(filename, 'tex', base_only=True)
+            tex_basename = texutils.swap_ext(filename, 'tex', base_only=True)
             tex_path = os.path.join(output_dir, tex_basename)
             try:
-                txt2tex(template, filename, params, tex_path)
-                tex2pdf(tex_path)
+                texutils.txt2tex(template, filename, params, tex_path)
+                texutils.tex2pdf(tex_path)
+                texutils.tex2pdf(tex_path)
+                texutils.delete_helper_files(tex_path)
             except (TemplateError, TexError) as e:
                 errors.append((filename, e))
 
