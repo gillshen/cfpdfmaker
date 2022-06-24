@@ -14,6 +14,7 @@ from PyQt6.QtWidgets import (
     QFileDialog,
     QLabel,
     QComboBox,
+    QLineEdit,
     QCheckBox,
     QPushButton,
     QMessageBox,
@@ -169,8 +170,13 @@ class FileList(QFrame):
         # must keep a reference to the created action
         self._actions = {}
         self._add_action(text='Add files', icon='add', callback=self.add)
-        self._add_action(text='Remove selected file',
-                         icon='remove', callback=self.remove_current)
+        _insert_toolbar_space(self.toolbar)
+        self._add_action(
+            text='Remove selected file',
+            icon='remove',
+            callback=self.remove_current
+        )
+        _insert_toolbar_space(self.toolbar)
         self._add_action(text='Remove all', callback=self.remove_all)
 
         # the list proper
@@ -231,13 +237,27 @@ class ControlPanel(QFrame):
 
         # output dir selection
         self._make_heading('Output directory')
-        self._make_combobox('output_dir', [str(ROOT), os.path.expanduser('~')])
+        output_frame = QToolBar()
+        output_frame.setStyleSheet('margin: 0; padding: 0')
+        layout.addWidget(output_frame)
+        self._output_edit = QLineEdit(output_frame)
+        self._output_edit.setText(str(ROOT))
+        self._output_edit.setReadOnly(True)
+        self._output_edit.setMinimumWidth(300)
+        self._fields['output_dir'] = self._output_edit.text
+        output_frame.addWidget(self._output_edit)
+        _insert_toolbar_space(output_frame)
+        self._getdir = QAction()
+        self._getdir.setIcon(QIcon(os.path.join(ICON_DIR, 'folder.png')))
+        self._getdir.setToolTip('Change the output directory')
+        self._getdir.triggered.connect(self.open_dir_dialog)
+        output_frame.addAction(self._getdir)
 
         # font selection
         self._fonts = QFontDatabase.families()
         self._font_sizes = [str(i) for i in range(8, 25)]
-        self._make_font_select('Heading font', 'Frutiger Linotype')
         self._make_font_select('Body font', 'EB Garamond', '12')
+        self._make_font_select('Heading font', 'Frutiger Linotype')
         self._make_font_select('CJK font', 'Noto Serif SC')
 
         # watermark selection
@@ -251,6 +271,7 @@ class ControlPanel(QFrame):
         button_frame = QFrame()
         layout.addWidget(button_frame)
         button_frame.setLayout(QHBoxLayout())
+        button_frame.layout().setContentsMargins(0, 0, 0, 0)
         keep_tex_check = QCheckBox('Keep tex files')
         keep_tex_check.setChecked(False)
         self._fields['keep_tex'] = keep_tex_check.isChecked
@@ -259,13 +280,18 @@ class ControlPanel(QFrame):
         button_frame.layout().addWidget(keep_tex_check)
         button_frame.layout().addStretch()
         button_frame.layout().addWidget(self._execute)
-        button_frame.layout().setContentsMargins(0, 0, 0, 0)
 
     def get_parameters(self) -> dict:
         return {field: getter() for field, getter in self._fields.items()}
 
     def on_execute(self, callback: callable):
         self._execute.clicked.connect(callback)
+
+    def open_dir_dialog(self):
+        if output_dir := QFileDialog.getExistingDirectory(
+            caption='Choose output directory'
+        ):
+            self._output_edit.setText(output_dir)
 
     def _make_font_select(self, field, default_font="", size=""):
         self._make_heading(field)
@@ -307,3 +333,7 @@ def _get_watermark_path(path):
         if not os.path.isfile(path):
             raise WatermarkNotFoundError(path)
     return path.replace('\\', '/')
+
+
+def _insert_toolbar_space(toolbar):
+    toolbar.addWidget(QLabel())
