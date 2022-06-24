@@ -142,12 +142,3 @@ def delete_helper_files(tex_path):
             os.remove(swap_ext(tex_path, ext))
         except FileNotFoundError:
             pass
-
-
-if __name__ == '__main__':
-    with open('src/test.txt', encoding='utf-8') as f:
-        blocks = parse_txt(f.read())
-    for (style, text) in blocks:
-        print(f'\nBEGIN BLOCK {style}')
-        print(text)
-        print('END BLOCK\n')

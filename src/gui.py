@@ -100,6 +100,8 @@ class MainWindow(QMainWindow):
                 shutil.move(pdf_path, os.path.join(output_dir, pdf_basename))
             except Exception:
                 errors.append((filename, traceback.format_exc()))
+            else:
+                os.remove(tex_path)
             finally:
                 texutils.delete_helper_files(tex_path)
 
@@ -119,7 +121,7 @@ class MainWindow(QMainWindow):
             )
         else:
             message_box.setIcon(QMessageBox.Icon.Information)
-            message_box.setText('Operations succesful')
+            message_box.setText('Operations successful')
         message_box.exec()
 
     def _log_params(self, **kwargs):
