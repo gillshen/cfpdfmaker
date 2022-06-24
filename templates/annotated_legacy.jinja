@@ -3,7 +3,7 @@
 \usepackage[UTF8]{ctex}
 \usepackage{microtype}
 \usepackage{etoolbox}
-%\AtEndPreamble{\AtBeginDocument{\microtypesetup{disable}{\em}\microtypesetup{enable}}}
+\AtEndPreamble{\AtBeginDocument{\microtypesetup{disable}{\em}\microtypesetup{enable}}}
 
 \usepackage{hyphenat}
 \usepackage{fontspec}
@@ -37,17 +37,23 @@
 
 \usepackage[colorlinks=true]{hyperref}
 \usepackage[framemethod=TikZ]{mdframed}
+\usepackage{todonotes}
 \usepackage{xcolor}
 \definecolor{notecolor}{RGB}{193, 212, 245}
+\definecolor{ntextcolor}{RGB}{235, 30, 75}
 
-\newcommand{\note}[1]{}
-\newcommand{\ntext}[1]{ #1}
+\newcommand{\note}[1]{\renewcommand{\baselinestretch}{1}%
+    \todo[backgroundcolor=notecolor,linecolor=notecolor,bordercolor=notecolor]{ #1}}
+
+\newcommand{\ntext}[1]{\textcolor{ntextcolor}{ #1}}
 
 \usepackage[%
-    left=4.5cm,
-    right=4.5cm,
-    top=3.0cm,
-    bottom=4.0cm
+    left=2.2cm,
+    right=9.1cm,
+    top=1.8cm,
+    bottom=2.8cm,
+    marginparwidth=7.2cm,
+    marginparsep=.5cm
 ]{geometry}
 
 \usepackage{parskip}
@@ -78,6 +84,7 @@
     {% elif block[0] == "addendum" %}
     \vspace{1em}
     \begin{mdframed}[backgroundcolor=notecolor, roundcorner=4pt]
+    
     {{ block[1] }}
     \end{mdframed}
     
