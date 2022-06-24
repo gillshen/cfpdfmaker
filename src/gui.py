@@ -1,8 +1,10 @@
-import os.path
+from email import message
+import os
 from itertools import filterfalse
 from pathlib import Path
 import shutil
-import pprint
+import traceback
+import json
 
 from PyQt6.QtWidgets import (
     QMainWindow,
@@ -13,6 +15,7 @@ from PyQt6.QtWidgets import (
     QLabel,
     QComboBox,
     QPushButton,
+    QMessageBox,
     QHBoxLayout,
     QVBoxLayout
 )
@@ -25,6 +28,11 @@ ROOT = Path(__file__).resolve().parent.parent
 TEMPLATE_DIR = os.path.join(ROOT, 'templates')
 ICON_DIR = os.path.join(ROOT, 'assets', 'icons')
 WATERMARK_DIR = os.path.join(ROOT, 'assets', 'watermarks')
+LOG_DIR = os.path.join(ROOT, 'log')
+
+
+if not os.path.exists(LOG_DIR):
+    os.mkdir(LOG_DIR)
 
 
 class WatermarkNotFoundError(FileNotFoundError):
@@ -32,6 +40,8 @@ class WatermarkNotFoundError(FileNotFoundError):
 
 
 class MainWindow(QMainWindow):
+
+    log_path = os.path.join(LOG_DIR, 'log.txt')
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -64,7 +74,12 @@ class MainWindow(QMainWindow):
         output_dir = params.pop('output_dir', None)
         params['watermark'] = _get_watermark_path(params.pop('watermark'))
         filenames = self.filelist.get_filenames()
-        self._log(template_name, output_dir, params, filenames)
+        self._log_params(
+            template_name=template_name,
+            output_dir=output_dir,
+            params=params,
+            filenames=filenames
+        )
 
         template = texutils.make_template(template_name)
 
@@ -79,25 +94,37 @@ class MainWindow(QMainWindow):
                 texutils.txt2tex(template, filename, params, tex_path)
                 texutils.tex2pdf(tex_path)
                 texutils.tex2pdf(tex_path)
-                texutils.delete_helper_files(tex_path)
                 # move the pdf to the output dir
                 pdf_path = texutils.swap_ext(tex_path, 'pdf')
                 pdf_basename = os.path.basename(pdf_path)
                 shutil.move(pdf_path, os.path.join(output_dir, pdf_basename))
-            except Exception as e:
-                errors.append((filename, e))
+            except Exception:
+                errors.append((filename, traceback.format_exc()))
+            finally:
+                texutils.delete_helper_files(tex_path)
 
-        # TODO user feedback
-        for (filename, e) in errors:
-            print('ERROR', filename, e)
-        print('*** finished ***')
+        with open(self.log_path, 'a', encoding='utf-8') as f:
+            for (filename, e) in errors:
+                f.write(f'\n{filename}\n{e}\n')
+            if not errors:
+                f.write('\nfinished without errors')
 
-    def _log(self, template_name, output_dir, params, filenames):
-        print('*** test mode ***')
-        print(f'{template_name = }')
-        print(f'{output_dir = }')
-        pprint.pprint(params)
-        pprint.pprint(filenames)
+        # show success, or errors if any
+        message_box = QMessageBox()
+        if errors:
+            message_box.setIcon(QMessageBox.Icon.Warning)
+            failures = "\n".join(filename for (filename, _) in errors)
+            message_box.setText(
+                f'Operation failed for the following files:\n{failures}'
+            )
+        else:
+            message_box.setIcon(QMessageBox.Icon.Information)
+            message_box.setText('Operations succesful')
+        message_box.exec()
+
+    def _log_params(self, **kwargs):
+        with open(self.log_path, 'w', encoding='utf-8') as f:
+            print(json.dumps(kwargs, indent=4), file=f)
 
 
 class FileList(QFrame):

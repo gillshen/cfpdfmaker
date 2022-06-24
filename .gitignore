@@ -154,3 +154,5 @@ cython_debug/
 
 # tex specific
 test.*
+*.tex
+*.pdf
