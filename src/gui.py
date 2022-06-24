@@ -1,4 +1,3 @@
-from email import message
 import os
 from itertools import filterfalse
 from pathlib import Path
@@ -93,14 +92,16 @@ class MainWindow(QMainWindow):
             try:
                 texutils.txt2tex(template, filename, params, tex_path)
                 texutils.tex2pdf(tex_path)
-                texutils.tex2pdf(tex_path)
-                # move the pdf to the output dir
-                pdf_path = texutils.swap_ext(tex_path, 'pdf')
-                pdf_basename = os.path.basename(pdf_path)
-                shutil.move(pdf_path, os.path.join(output_dir, pdf_basename))
             except Exception:
                 errors.append((filename, traceback.format_exc()))
             else:
+                # second pass is necessary to generate watermarks
+                texutils.tex2pdf(tex_path)
+                # move the pdf to the output dir
+                # and remove the tex file
+                pdf_path = texutils.swap_ext(tex_path, 'pdf')
+                pdf_basename = os.path.basename(pdf_path)
+                shutil.move(pdf_path, os.path.join(output_dir, pdf_basename))
                 os.remove(tex_path)
             finally:
                 texutils.delete_helper_files(tex_path)
