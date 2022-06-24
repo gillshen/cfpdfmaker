@@ -101,10 +101,14 @@ def parse_txt(s: str):
         # another pass to deal with nested cases
         p = re.sub(r'\*\*((?:[^*]|\*[^*])+)\*\*', r'\\textbf{\1}', p)
 
-        # convert straight quotes to tex-style quotation marks
+        # convert straight quotes to tex-style quotes
         p = re.sub(r'(\s|\(|\{|^)"', r'\1``', p)
         p = re.sub(r"(\s|\(|\{|^)'", r'\1`', p)
         p = p.replace('"', "''")
+
+        # convert all quotes to tex-style quotes (for CJK compatibility)
+        p = p.replace('‘', '`').replace('’', "'")
+        p = p.replace('“', '``').replace('”', "''")
 
         # use paddable dashes
         p = re.sub(r'\s*(?:---|—)\s*|\s+(?:-|–)\s+', r'\\mdash ', p)
